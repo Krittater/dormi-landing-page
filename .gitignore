@@ -1,0 +1,8 @@
+.env
+.env.example
+.env.prod
+
+node_modules
+
+docker
+DockerSetupDocs.md

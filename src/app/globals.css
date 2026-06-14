@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --teal: #059669;
+  --teal-dark: #047857;
+  --accent: #10b981;
+  --navy: #ffffff;
+  --navy-2: #f7fcf9;
+  --navy-3: #ffffff;
+  --navy-4: #ecfdf5;
+  --text: #064e3b;
+  --text-muted: #52796f;
+  --card-bg: rgba(21, 128, 61, 0.06);
+  --card-border: rgba(21, 128, 61, 0.14);
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--navy);
+  color: var(--text);
+  font-family: var(--font-body, 'Sarabun'), sans-serif;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: rgba(16, 185, 129, 0.22);
+  color: var(--text);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: rgba(82, 121, 111, 0.55);
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-secondary px-5 py-2.5 font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-secondary-dark hover:shadow-glow;
+  }
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-secondary/20 bg-white/80 px-5 py-2.5 font-semibold text-ink backdrop-blur-sm transition-colors duration-200 hover:border-secondary/40 hover:bg-white hover:text-ink;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-sm text-ink-muted transition-colors hover:text-secondary;
+  }
+  .card {
+    @apply rounded-2xl border border-secondary/12 bg-white/90 shadow-sm backdrop-blur-sm;
+  }
+  .section-pad {
+    @apply px-6 py-16 md:px-12 md:py-20 lg:px-20;
+  }
+}
