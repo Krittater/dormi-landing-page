@@ -37,7 +37,7 @@ export function Testimonials() {
           {reviews.map((r) => (
             <div
               key={r.name}
-              className="rounded-2xl border border-teal/15 bg-white/90 p-6 shadow-sm"
+              className="rounded-2xl border border-teal/15 bg-white/90 p-6 shadow-xs"
             >
               <div className="mb-3 flex gap-0.5 text-teal" aria-hidden>
                 {Array.from({ length: 5 }).map((_, i) => (

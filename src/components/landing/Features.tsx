@@ -55,7 +55,7 @@ export function Features() {
             return (
               <div
                 key={f.title}
-                className="group flex h-full flex-col rounded-2xl border border-teal/15 bg-white/80 p-7 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-teal/30 hover:shadow-card"
+                className="group flex h-full flex-col rounded-2xl border border-teal/15 bg-white/80 p-7 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-teal/30 hover:shadow-card"
               >
                 <div className="mb-5 flex size-12 items-center justify-center rounded-xl border border-teal/20 bg-teal/10 text-teal">
                   <Icon className="size-6" strokeWidth={1.75} aria-hidden />

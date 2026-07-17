@@ -1,6 +1,107 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@plugin "tailwindcss-animate";
+
+/* ------------------------------------------------------------------ */
+/* Design tokens — port จาก tailwind.config.ts เดิม (Tailwind 3)       */
+/* โทนเดียวกับ dormi-fe-2: primary #059669 hover #047857              */
+/* ------------------------------------------------------------------ */
+@theme {
+  --color-secondary: #059669;
+  --color-secondary-dark: #047857;
+  --color-secondary-muted: #f0fdf4;
+  --color-secondary-2: #f7fcf9;
+
+  --color-teal: #059669;
+  --color-teal-dark: #047857;
+  --color-teal-light: #d1fae5;
+
+  --color-accent: #10b981;
+  --color-accent-muted: #d1fae5;
+
+  --color-navy: #ffffff;
+  --color-navy-2: #f7fcf9;
+  --color-navy-3: #ffffff;
+  --color-navy-4: #ecfdf5;
+
+  --color-ink: #064e3b;
+  --color-ink-muted: #52796f;
+
+  /* shadcn-style tokens (ใช้กับ ui components ที่ยกมาจาก dormi-fe-2) */
+  --color-background: #ffffff;
+  --color-foreground: #064e3b;
+  --color-card: #ffffff;
+  --color-card-foreground: #064e3b;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #064e3b;
+  --color-primary: #059669;
+  --color-primary-foreground: #ffffff;
+  --color-muted: #f0fdf4;
+  --color-muted-foreground: #52796f;
+  --color-border: rgba(21, 128, 61, 0.14);
+  --color-input: rgba(21, 128, 61, 0.2);
+  --color-ring: #059669;
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+
+  --radius: 0.625rem;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --font-display: var(--font-display), "Kanit", sans-serif;
+  --font-body: var(--font-body), "Sarabun", sans-serif;
+
+  --shadow-glow: 0 8px 24px rgba(5, 150, 105, 0.35);
+  --shadow-card: 0 16px 40px rgba(21, 128, 61, 0.08);
+  --shadow-mockup:
+    0 40px 80px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(21, 128, 61, 0.08);
+
+  --animate-pulse-dot: pulse-dot 2s infinite;
+  --animate-fade-in-down: fade-in-down 0.7s ease both;
+  --animate-fade-in-up: fade-in-up 0.8s ease both;
+  --animate-fade-in: fade-in 1s ease both;
+
+  @keyframes pulse-dot {
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.5;
+      transform: scale(1.3);
+    }
+  }
+  @keyframes fade-in-down {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
 
 :root {
   --teal: #059669;
@@ -28,7 +129,7 @@ html {
 body {
   background: var(--navy);
   color: var(--text);
-  font-family: var(--font-body, 'Sarabun'), sans-serif;
+  font-family: var(--font-body, "Sarabun"), sans-serif;
   line-height: 1.7;
   overflow-x: hidden;
 }
@@ -48,13 +149,13 @@ textarea::placeholder {
     @apply inline-flex items-center justify-center gap-2 rounded-full bg-secondary px-5 py-2.5 font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-secondary-dark hover:shadow-glow;
   }
   .btn-outline {
-    @apply inline-flex items-center justify-center gap-2 rounded-full border border-secondary/20 bg-white/80 px-5 py-2.5 font-semibold text-ink backdrop-blur-sm transition-colors duration-200 hover:border-secondary/40 hover:bg-white hover:text-ink;
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-secondary/20 bg-white/80 px-5 py-2.5 font-semibold text-ink backdrop-blur-xs transition-colors duration-200 hover:border-secondary/40 hover:bg-white hover:text-ink;
   }
   .btn-ghost {
     @apply inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-sm text-ink-muted transition-colors hover:text-secondary;
   }
   .card {
-    @apply rounded-2xl border border-secondary/12 bg-white/90 shadow-sm backdrop-blur-sm;
+    @apply rounded-2xl border border-secondary/12 bg-white/90 shadow-xs backdrop-blur-xs;
   }
   .section-pad {
     @apply px-6 py-16 md:px-12 md:py-20 lg:px-20;

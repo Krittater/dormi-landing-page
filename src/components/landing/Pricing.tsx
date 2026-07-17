@@ -1,15 +1,88 @@
 'use client';
 
 import { Check } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 import { TrackSection } from '@/components/TrackSection';
 import { TrackedButton } from '@/components/TrackedButton';
+import { dormiApi, type PublicPlan } from '@/lib/dormi-api';
 
 interface Props {
   onRegisterClick: () => void;
 }
 
+/** copy การตลาดต่อแผน (ราคา/เพดานห้องมาจาก API — source of truth เดียวกับที่ระบบบังคับจริง) */
+const PLAN_COPY: Record<
+  string,
+  { name: string; desc: string; cta: string; trackId: string; featured?: boolean }
+> = {
+  FREE: {
+    name: 'สำหรับผู้เริ่มต้น',
+    desc: 'สำหรับหอพักขนาดเล็กที่ต้องการเริ่มต้น',
+    cta: 'เริ่มต้นฟรี',
+    trackId: 'pricing_starter',
+  },
+  PRO: {
+    name: 'สำหรับมืออาชีพ',
+    desc: 'สำหรับเจ้าของหอพักที่ต้องการระบบครบ',
+    cta: 'เลือกแผนนี้',
+    trackId: 'pricing_pro',
+    featured: true,
+  },
+};
+
+const FEATURE_LABELS: Record<string, string> = {
+  core: 'จัดการหอ / ห้อง / ผู้เช่า / มิเตอร์',
+  billing: 'ระบบบิลอัตโนมัติ + รอบบิล',
+  finance: 'โมดูลการเงิน รายรับ-รายจ่าย',
+  staff_roles: 'ตำแหน่งพนักงาน + กำหนดสิทธิ์',
+};
+
+function planFeatureList(plan: PublicPlan): string[] {
+  const roomLimit = plan.limits['room_limit'];
+  const items = [
+    roomLimit === null || roomLimit === undefined
+      ? 'ห้องพักไม่จำกัด'
+      : `ห้องพักสูงสุด ${roomLimit} ห้อง (รวมทุกหอ)`,
+    'สร้างหอได้ไม่จำกัด',
+  ];
+  for (const code of plan.features) {
+    const label = FEATURE_LABELS[code];
+    if (label) items.push(label);
+  }
+  return items;
+}
+
+function formatPrice(plan: PublicPlan): { price: string; unit?: string } {
+  if (!plan.priceMonthly) return { price: 'ฟรี' };
+  const amount = Number(plan.priceMonthly);
+  return {
+    price: `฿${Number.isFinite(amount) ? amount.toLocaleString('th-TH') : plan.priceMonthly}`,
+    unit: '/ เดือน',
+  };
+}
+
 export function Pricing({ onRegisterClick }: Props) {
+  // ดึงแผนจริงจาก dormi API — ดึงไม่ได้ = โชว์ค่า fallback เดิม (marketing ไม่ล่มตาม backend)
+  const [plans, setPlans] = useState<PublicPlan[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    dormiApi
+      .publicPlans()
+      .then((data) => {
+        if (!cancelled && Array.isArray(data) && data.length > 0) {
+          setPlans(data);
+        }
+      })
+      .catch(() => {
+        /* ใช้ fallback static */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <TrackSection id="pricing" label="ราคา" className="section-pad">
       <div className="mx-auto max-w-6xl">
@@ -24,40 +97,63 @@ export function Pricing({ onRegisterClick }: Props) {
         </div>
 
         <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-          <PlanCard
-            name="สำหรับผู้เริ่มต้น"
-            price="ฟรี"
-            unit="/ 3 เดือน"
-            desc="สำหรับหอพักขนาดเล็กที่ต้องการเริ่มต้น"
-            features={[
-              'ห้องพักสูงสุด 10 ห้อง',
-              'Dashboard พื้นฐาน',
-              'ระบบบิลอัตโนมัติ',
-              'แจ้งซ่อมออนไลน์',
-            ]}
-            cta="เริ่มต้นฟรี"
-            trackId="pricing_starter"
-            onClick={onRegisterClick}
-          />
-
-          <PlanCard
-            name="สำหรับมืออาชีพ"
-            price="฿990"
-            unit="/ เดือน"
-            desc="สำหรับเจ้าของหอพักที่ต้องการระบบครบ"
-            featured
-            features={[
-              'ห้องพักสูงสุด 100 ห้อง',
-              'Dashboard + รายงานขั้นสูง',
-              'สัญญาดิจิทัล',
-              'บิลอัตโนมัติ + แจ้งเตือน SMS',
-              'ระบบติดตามซ่อมบำรุง',
-              'รองรับหลายสาขา',
-            ]}
-            cta="เลือกแผนนี้"
-            trackId="pricing_pro"
-            onClick={onRegisterClick}
-          />
+          {plans ? (
+            plans.map((plan) => {
+              const copy = PLAN_COPY[plan.code] ?? {
+                name: plan.name,
+                desc: plan.description ?? '',
+                cta: 'เลือกแผนนี้',
+                trackId: `pricing_${plan.code.toLowerCase()}`,
+              };
+              const { price, unit } = formatPrice(plan);
+              return (
+                <PlanCard
+                  key={plan.code}
+                  name={copy.name}
+                  price={price}
+                  unit={unit}
+                  desc={copy.desc}
+                  featured={copy.featured}
+                  features={planFeatureList(plan)}
+                  cta={copy.cta}
+                  trackId={copy.trackId}
+                  onClick={onRegisterClick}
+                />
+              );
+            })
+          ) : (
+            <>
+              <PlanCard
+                name="สำหรับผู้เริ่มต้น"
+                price="ฟรี"
+                desc="สำหรับหอพักขนาดเล็กที่ต้องการเริ่มต้น"
+                features={[
+                  'ห้องพักสูงสุด 30 ห้อง (รวมทุกหอ)',
+                  'สร้างหอได้ไม่จำกัด',
+                  'Dashboard พื้นฐาน',
+                ]}
+                cta="เริ่มต้นฟรี"
+                trackId="pricing_starter"
+                onClick={onRegisterClick}
+              />
+              <PlanCard
+                name="สำหรับมืออาชีพ"
+                price="฿990"
+                unit="/ เดือน"
+                desc="สำหรับเจ้าของหอพักที่ต้องการระบบครบ"
+                featured
+                features={[
+                  'ห้องพักไม่จำกัด',
+                  'ระบบบิลอัตโนมัติ + รอบบิล',
+                  'โมดูลการเงิน รายรับ-รายจ่าย',
+                  'ตำแหน่งพนักงาน + กำหนดสิทธิ์',
+                ]}
+                cta="เลือกแผนนี้"
+                trackId="pricing_pro"
+                onClick={onRegisterClick}
+              />
+            </>
+          )}
 
           <PlanCard
             name="สำหรับองค์กร"
@@ -98,11 +194,11 @@ function PlanCard({ name, price, unit, desc, features, cta, trackId, onClick, fe
       className={`relative rounded-2xl border p-7 transition hover:-translate-y-1 ${
         featured
           ? 'border-teal bg-teal/[0.04] shadow-[0_8px_30px_-10px_rgba(21,128,61,0.2)]'
-          : 'border-teal/15 bg-white shadow-sm'
+          : 'border-teal/15 bg-white shadow-xs'
       }`}
     >
       {featured && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-teal px-3 py-1 text-xs font-bold text-white shadow-sm">
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-teal px-3 py-1 text-xs font-bold text-white shadow-xs">
           ยอดนิยม
         </div>
       )}

@@ -219,7 +219,7 @@ export default function AdminDashboardPage() {
           </Panel>
         </section>
 
-        <section className="rounded-2xl border border-secondary/12 bg-white p-5 shadow-sm">
+        <section className="rounded-2xl border border-secondary/12 bg-white p-5 shadow-xs">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="font-display text-lg font-semibold text-ink">รายชื่อผู้ลงทะเบียน</h2>
@@ -232,7 +232,7 @@ export default function AdminDashboardPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="ค้นหาชื่อ / อีเมล / เบอร์โทร"
-                className="w-56 rounded-lg border border-secondary/20 bg-secondary-muted px-3 py-2 text-sm text-ink outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/20 sm:w-72"
+                className="w-56 rounded-lg border border-secondary/20 bg-secondary-muted px-3 py-2 text-sm text-ink outline-hidden focus:border-secondary focus:ring-2 focus:ring-secondary/20 sm:w-72"
               />
               <button type="submit" className="btn-primary px-4 py-2 text-sm">
                 ค้นหา
@@ -335,7 +335,7 @@ function KpiCard({
   tone?: 'primary';
 }) {
   return (
-    <div className="rounded-xl border border-secondary/12 bg-white p-4 shadow-sm">
+    <div className="rounded-xl border border-secondary/12 bg-white p-4 shadow-xs">
       <div className="text-[11px] text-ink-muted">{label}</div>
       <div
         className={`mt-1 font-display text-2xl font-bold ${
@@ -360,7 +360,7 @@ function Panel({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-secondary/12 bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border border-secondary/12 bg-white p-5 shadow-xs">
       <div className="mb-4">
         <h2 className="font-display text-lg font-semibold text-ink">{title}</h2>
         {subtitle && <p className="text-xs text-ink-muted">{subtitle}</p>}

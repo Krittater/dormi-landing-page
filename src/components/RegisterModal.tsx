@@ -216,7 +216,7 @@ function Field({ label, value, onChange, type = 'text', placeholder, autoFocus }
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         autoFocus={autoFocus}
-        className="w-full rounded-lg border border-secondary/20 bg-secondary-muted px-3 py-2.5 text-sm text-ink outline-none transition focus:border-secondary focus:ring-2 focus:ring-secondary/20"
+        className="w-full rounded-lg border border-secondary/20 bg-secondary-muted px-3 py-2.5 text-sm text-ink outline-hidden transition focus:border-secondary focus:ring-2 focus:ring-secondary/20"
       />
     </label>
   );

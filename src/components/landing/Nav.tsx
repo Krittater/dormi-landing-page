@@ -65,7 +65,7 @@ export function Nav({ onRegisterClick }: Props) {
       </div>
 
       {open && (
-        <div className="mx-auto mt-3 max-w-7xl rounded-2xl border border-teal/12 bg-white p-4 shadow-sm md:hidden">
+        <div className="mx-auto mt-3 max-w-7xl rounded-2xl border border-teal/12 bg-white p-4 shadow-xs md:hidden">
           <ul className="space-y-2">
             {[
               { href: '#features', label: 'ฟีเจอร์' },
