@@ -118,10 +118,97 @@ export interface AdminPlan {
   subscribers?: number;
 }
 
+export interface CreatedCustomer {
+  userId: string;
+  email: string;
+  phone: string;
+  roles: string[];
+  plan: { planCode: string } | null;
+  /** รหัสผ่านที่ระบบสุ่มให้ — คืนครั้งเดียว (null ถ้าทีมงานตั้งเอง) */
+  initialPassword: string | null;
+}
+
+export interface AdminRole {
+  roleId: string;
+  code: string;
+  name: string;
+  description: string | null;
+  isSystem: boolean;
+  isSuperuser: boolean;
+  permissionCodes: string[];
+}
+
+export interface AdminPermission {
+  permissionId: string;
+  code: string;
+  description: string | null;
+}
+
+export interface AuditLogItem {
+  auditId?: string;
+  actorType: string;
+  actorId: string | null;
+  actorEmail: string | null;
+  action: string;
+  targetType: string;
+  targetId: string | null;
+  payload: Record<string, unknown> | null;
+  ip: string | null;
+  createdAt: string;
+}
+
+export interface AuditLogList {
+  items: AuditLogItem[];
+  pagination: { page: number; limit: number; total: number; pages: number };
+}
+
 export const dormiApi = {
   publicPlans: () => dormiFetch<PublicPlan[]>('/public/plans'),
 
   admin: {
+    createCustomer: (body: {
+      email: string;
+      phone: string;
+      password?: string;
+      firstNameTH?: string;
+      lastNameTH?: string;
+      planCode?: string;
+      leadRef?: string;
+      note?: string;
+    }) =>
+      dormiFetch<{ message: string; data: CreatedCustomer } | CreatedCustomer>(
+        '/admin/customers',
+        { method: 'POST', json: body, auth: true },
+      ),
+    rbacRoles: () => dormiFetch<AdminRole[]>('/admin/rbac/roles', { auth: true }),
+    rbacPermissions: () =>
+      dormiFetch<AdminPermission[]>('/admin/rbac/permissions', { auth: true }),
+    createRole: (body: { code: string; name: string; description?: string }) =>
+      dormiFetch('/admin/rbac/roles', { method: 'POST', json: body, auth: true }),
+    setRolePermissions: (roleId: string, permissionCodes: string[]) =>
+      dormiFetch(`/admin/rbac/roles/${roleId}/permissions`, {
+        method: 'PUT',
+        json: { permissionCodes },
+        auth: true,
+      }),
+    auditLogs: (params?: {
+      page?: number;
+      limit?: number;
+      action?: string;
+      targetType?: string;
+      actorEmail?: string;
+    }) => {
+      const qs = new URLSearchParams();
+      if (params?.page) qs.set('page', String(params.page));
+      if (params?.limit) qs.set('limit', String(params.limit));
+      if (params?.action) qs.set('action', params.action);
+      if (params?.targetType) qs.set('targetType', params.targetType);
+      if (params?.actorEmail) qs.set('actorEmail', params.actorEmail);
+      const suffix = qs.size > 0 ? `?${qs.toString()}` : '';
+      return dormiFetch<AuditLogList>(`/admin/audit-logs${suffix}`, {
+        auth: true,
+      });
+    },
     customers: (params?: { search?: string; page?: number; limit?: number }) => {
       const qs = new URLSearchParams();
       if (params?.search) qs.set('search', params.search);
@@ -148,6 +235,20 @@ export const dormiApi = {
         auth: true,
       }),
     plans: () => dormiFetch<AdminPlan[]>('/admin/plans', { auth: true }),
+    createPlan: (body: {
+      code: string;
+      name: string;
+      description?: string;
+      priceMonthly?: string | null;
+      priceYearly?: string | null;
+      sortOrder?: number;
+    }) =>
+      dormiFetch<{ message: string; data: AdminPlan } | AdminPlan>(
+        '/admin/plans',
+        { method: 'POST', json: body, auth: true },
+      ),
+    deletePlan: (planId: string) =>
+      dormiFetch(`/admin/plans/${planId}`, { method: 'DELETE', auth: true }),
     updatePlan: (
       planId: string,
       body: Partial<

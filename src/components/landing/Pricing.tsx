@@ -8,7 +8,8 @@ import { TrackedButton } from '@/components/TrackedButton';
 import { dormiApi, type PublicPlan } from '@/lib/dormi-api';
 
 interface Props {
-  onRegisterClick: () => void;
+  /** เปิด modal ลงทะเบียน — แนบ code แผนที่กดเลือก (ไม่แนบ = สมัครทั่วไป) */
+  onRegisterClick: (planCode?: string) => void;
 }
 
 /** copy การตลาดต่อแผน (ราคา/เพดานห้องมาจาก API — source of truth เดียวกับที่ระบบบังคับจริง) */
@@ -117,7 +118,7 @@ export function Pricing({ onRegisterClick }: Props) {
                   features={planFeatureList(plan)}
                   cta={copy.cta}
                   trackId={copy.trackId}
-                  onClick={onRegisterClick}
+                  onClick={() => onRegisterClick(plan.code)}
                 />
               );
             })
@@ -134,7 +135,7 @@ export function Pricing({ onRegisterClick }: Props) {
                 ]}
                 cta="เริ่มต้นฟรี"
                 trackId="pricing_starter"
-                onClick={onRegisterClick}
+                onClick={() => onRegisterClick('FREE')}
               />
               <PlanCard
                 name="สำหรับมืออาชีพ"
@@ -150,7 +151,7 @@ export function Pricing({ onRegisterClick }: Props) {
                 ]}
                 cta="เลือกแผนนี้"
                 trackId="pricing_pro"
-                onClick={onRegisterClick}
+                onClick={() => onRegisterClick('PRO')}
               />
             </>
           )}
@@ -168,7 +169,7 @@ export function Pricing({ onRegisterClick }: Props) {
             ]}
             cta="ติดต่อทีมงาน"
             trackId="pricing_enterprise"
-            onClick={onRegisterClick}
+            onClick={() => onRegisterClick()}
           />
         </div>
       </div>

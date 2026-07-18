@@ -45,6 +45,24 @@ interface EditState {
   features: Set<string>;
 }
 
+interface CreateState {
+  code: string;
+  name: string;
+  description: string;
+  priceMonthly: string;
+  roomLimit: string;
+  features: Set<string>;
+}
+
+const EMPTY_CREATE: CreateState = {
+  code: '',
+  name: '',
+  description: '',
+  priceMonthly: '',
+  roomLimit: '',
+  features: new Set(['core']),
+};
+
 /** ตั้งราคา/feature/เพดานของแต่ละแผน — ทุกการแก้มี audit ฝั่ง backend */
 export default function AdminPlansPage() {
   const router = useRouter();
@@ -53,6 +71,13 @@ export default function AdminPlansPage() {
   const [error, setError] = useState<string | null>(null);
   const [edit, setEdit] = useState<EditState | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const [createOpen, setCreateOpen] = useState(false);
+  const [create, setCreate] = useState<CreateState>(EMPTY_CREATE);
+  const [creating, setCreating] = useState(false);
+
+  const [deleting, setDeleting] = useState<AdminPlan | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
 
   useEffect(() => {
     if (!getToken()) {
@@ -117,6 +142,54 @@ export default function AdminPlansPage() {
     }
   };
 
+  const submitCreate = async () => {
+    if (!create.code || !create.name) return;
+    setCreating(true);
+    setError(null);
+    try {
+      const res = await dormiApi.admin.createPlan({
+        code: create.code.trim().toUpperCase(),
+        name: create.name.trim(),
+        description: create.description.trim() || undefined,
+        priceMonthly: create.priceMonthly.trim() === '' ? null : create.priceMonthly.trim(),
+      });
+      const created = (res as { data?: AdminPlan }).data ?? (res as AdminPlan);
+      if (created.planId) {
+        await dormiApi.admin.setPlanFeatures(created.planId, [...create.features]);
+        await dormiApi.admin.setPlanLimits(created.planId, [
+          {
+            key: 'room_limit',
+            value: create.roomLimit.trim() === '' ? null : Number(create.roomLimit),
+          },
+        ]);
+      }
+      setCreateOpen(false);
+      setCreate(EMPTY_CREATE);
+      void load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'สร้างแผนไม่สำเร็จ');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    setDeleteBusy(true);
+    setError(null);
+    try {
+      await dormiApi.admin.deletePlan(deleting.planId);
+      setDeleting(null);
+      void load();
+    } catch (err) {
+      // backend บล็อกลบแผน default / แผนที่มีลูกค้าใช้อยู่ — โชว์เหตุผลตรงๆ
+      setError(err instanceof Error ? err.message : 'ลบแผนไม่สำเร็จ');
+      setDeleting(null);
+    } finally {
+      setDeleteBusy(false);
+    }
+  };
+
   if (!ready) return null;
 
   return (
@@ -125,6 +198,9 @@ export default function AdminPlansPage() {
       <main className="mx-auto max-w-6xl space-y-6 px-6 py-8">
         <div className="flex items-center justify-between">
           <h1 className="font-display text-2xl font-bold text-ink">แผน & ราคา</h1>
+          <Button size="sm" onClick={() => setCreateOpen(true)}>
+            + สร้างแผน
+          </Button>
         </div>
 
         {error && (
@@ -151,9 +227,20 @@ export default function AdminPlansPage() {
                     </CardTitle>
                     <p className="mt-1 text-sm text-ink-muted">{plan.name}</p>
                   </div>
-                  <Button size="sm" variant="outline" onClick={() => openEdit(plan)}>
-                    แก้ไข
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => openEdit(plan)}>
+                      แก้ไข
+                    </Button>
+                    {!plan.isDefault && (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => setDeleting(plan)}
+                      >
+                        ลบ
+                      </Button>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm">
                   <div className="font-display text-2xl font-bold text-ink">
@@ -181,6 +268,120 @@ export default function AdminPlansPage() {
           </div>
         )}
       </main>
+
+      <Dialog open={createOpen} onOpenChange={(open) => !open && setCreateOpen(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>สร้างแผนใหม่</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>code (A-Z, 0-9, _ เท่านั้น)</Label>
+                <Input
+                  value={create.code}
+                  onChange={(e) => setCreate({ ...create, code: e.target.value })}
+                  placeholder="เช่น PLUS"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>ชื่อแผน</Label>
+                <Input
+                  value={create.name}
+                  onChange={(e) => setCreate({ ...create, name: e.target.value })}
+                  placeholder="เช่น พลัส"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>คำอธิบาย (โชว์หน้า pricing)</Label>
+              <Input
+                value={create.description}
+                onChange={(e) => setCreate({ ...create, description: e.target.value })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>ราคา/เดือน (บาท) — ว่าง = ฟรี</Label>
+                <Input
+                  inputMode="decimal"
+                  value={create.priceMonthly}
+                  onChange={(e) => setCreate({ ...create, priceMonthly: e.target.value })}
+                  placeholder="เช่น 490.00"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>เพดานห้องรวม — ว่าง = ไม่จำกัด</Label>
+                <Input
+                  inputMode="numeric"
+                  value={create.roomLimit}
+                  onChange={(e) => setCreate({ ...create, roomLimit: e.target.value })}
+                  placeholder="เช่น 100"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>ฟีเจอร์ที่เปิดให้แผนนี้</Label>
+              <div className="space-y-1.5">
+                {KNOWN_FEATURES.map((f) => (
+                  <label key={f.code} className="flex items-center gap-2 text-sm text-ink">
+                    <input
+                      type="checkbox"
+                      checked={create.features.has(f.code)}
+                      onChange={(e) => {
+                        const next = new Set(create.features);
+                        if (e.target.checked) next.add(f.code);
+                        else next.delete(f.code);
+                        setCreate({ ...create, features: next });
+                      }}
+                      className="h-4 w-4 accent-[#059669]"
+                    />
+                    <span>
+                      {f.label}{' '}
+                      <code className="text-xs text-ink-muted">({f.code})</code>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateOpen(false)}>
+              ยกเลิก
+            </Button>
+            <Button
+              onClick={() => void submitCreate()}
+              disabled={creating || !create.code || !create.name}
+            >
+              {creating ? 'กำลังสร้าง…' : 'สร้างแผน'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleting !== null} onOpenChange={(open) => !open && setDeleting(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>ลบแผน {deleting?.code}?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-ink-muted">
+            แผนจะหายจากหน้า pricing และ assign ให้ลูกค้าใหม่ไม่ได้อีก
+            (ประวัติ subscription เดิมยังอยู่) — ระบบจะไม่ยอมลบถ้ายังมีลูกค้าใช้แผนนี้อยู่
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleting(null)}>
+              ยกเลิก
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => void confirmDelete()}
+              disabled={deleteBusy}
+            >
+              {deleteBusy ? 'กำลังลบ…' : 'ยืนยันลบแผน'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={edit !== null} onOpenChange={(open) => !open && setEdit(null)}>
         <DialogContent>

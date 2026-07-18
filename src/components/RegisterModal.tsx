@@ -9,6 +9,8 @@ interface Props {
   open: boolean;
   onClose: () => void;
   source?: string;
+  /** code แผนที่ลูกค้ากดเลือกจากหน้า pricing — ติดไปกับ lead */
+  interestedPlan?: string;
 }
 
 interface FormState {
@@ -20,7 +22,7 @@ interface FormState {
 
 const initial: FormState = { firstName: '', lastName: '', email: '', phone: '' };
 
-export function RegisterModal({ open, onClose, source }: Props) {
+export function RegisterModal({ open, onClose, source, interestedPlan }: Props) {
   const [form, setForm] = useState<FormState>(initial);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,13 +74,14 @@ export function RegisterModal({ open, onClose, source }: Props) {
           lastName: form.lastName.trim(),
           email: form.email.trim() || undefined,
           phone: form.phone.trim(),
+          interestedPlan: interestedPlan || undefined,
         },
       });
       void trackEvent({
         type: 'BUTTON_CLICK',
         target: 'register_submit_success',
         label: 'ลงทะเบียนสำเร็จ',
-        metadata: { source },
+        metadata: { source, interestedPlan },
       });
       setSuccess('ขอบคุณครับ! เราได้รับข้อมูลแล้ว ทีมงานจะติดต่อกลับโดยเร็วที่สุด');
     } catch (err) {
@@ -113,16 +116,21 @@ export function RegisterModal({ open, onClose, source }: Props) {
         </button>
 
         <div className="mb-5">
-          <div className="mb-1 inline-flex items-center gap-2 rounded-full border border-secondary/25 bg-secondary/10 px-3 py-1 text-xs text-secondary">
+          {/* <div className="mb-1 inline-flex items-center gap-2 rounded-full border border-secondary/25 bg-secondary/10 px-3 py-1 text-xs text-secondary">
             <span className="size-1.5 animate-pulse-dot rounded-full bg-secondary" />
             ฟรี 3 เดือนแรก
-          </div>
+          </div> */}
           <h3 id="register-title" className="font-display text-2xl font-bold text-ink">
             ลงทะเบียนรับสิทธิ์ทดลองใช้
           </h3>
           <p className="mt-1 text-sm text-ink-muted">
             ทีมงานจะติดต่อกลับภายใน 1 วันทำการ
           </p>
+          {interestedPlan && (
+            <p className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-secondary/10 px-2.5 py-1 text-xs font-medium text-secondary">
+              แผนที่คุณเลือก: {interestedPlan}
+            </p>
+          )}
         </div>
 
         {success ? (

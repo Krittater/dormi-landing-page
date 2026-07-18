@@ -15,22 +15,32 @@ import { RegisterModal } from '@/components/RegisterModal';
 
 export default function HomePage() {
   const [openRegister, setOpenRegister] = useState(false);
+  // แผนที่ลูกค้ากดเลือกจากการ์ดราคา — ติดไปกับ lead ตอนลงทะเบียน
+  const [interestedPlan, setInterestedPlan] = useState<string | undefined>(undefined);
 
-  const open = () => setOpenRegister(true);
+  const open = (planCode?: string) => {
+    setInterestedPlan(planCode);
+    setOpenRegister(true);
+  };
   const close = () => setOpenRegister(false);
 
   return (
     <main>
-      <Nav onRegisterClick={open} />
-      <Hero onRegisterClick={open} />
+      <Nav onRegisterClick={() => open()} />
+      <Hero onRegisterClick={() => open()} />
       <DashboardMockup />
       <Features />
       <Steps />
       <Pricing onRegisterClick={open} />
       <Testimonials />
-      <CTA onRegisterClick={open} />
+      <CTA onRegisterClick={() => open()} />
       <Footer />
-      <RegisterModal open={openRegister} onClose={close} source="landing" />
+      <RegisterModal
+        open={openRegister}
+        onClose={close}
+        source="landing"
+        interestedPlan={interestedPlan}
+      />
     </main>
   );
 }

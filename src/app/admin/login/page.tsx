@@ -2,10 +2,10 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { apiFetch, ApiError } from '@/lib/api';
-import { setToken } from '@/lib/session';
+import { getToken, setToken } from '@/lib/session';
 
 interface LoginResponse {
   accessToken: string;
@@ -18,6 +18,13 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // login แล้ว = ไม่ต้องเห็นหน้านี้อีก — เด้งเข้า dashboard จนกว่าจะ logout
+  useEffect(() => {
+    if (getToken()) {
+      router.replace('/admin/dashboard');
+    }
+  }, [router]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();

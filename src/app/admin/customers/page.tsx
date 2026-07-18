@@ -38,8 +38,29 @@ import {
   type AdminCustomer,
   type AdminCustomerList,
   type AdminPlan,
+  type CreatedCustomer,
 } from '@/lib/dormi-api';
 import { getToken } from '@/lib/session';
+
+interface ProvisionForm {
+  email: string;
+  phone: string;
+  firstNameTH: string;
+  lastNameTH: string;
+  planCode: string;
+  note: string;
+  leadRef: string;
+}
+
+const EMPTY_PROVISION: ProvisionForm = {
+  email: '',
+  phone: '',
+  firstNameTH: '',
+  lastNameTH: '',
+  planCode: '',
+  note: '',
+  leadRef: '',
+};
 
 /** จัดการลูกค้า dormi: ดูแผน/โควตา + assign แผน (manual) + ระงับบัญชี — เรียก backend-2 ด้วย SSO token */
 export default function AdminCustomersPage() {
@@ -58,12 +79,34 @@ export default function AdminCustomersPage() {
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
 
+  // dialog สร้างลูกค้า (provision จาก lead หรือกรอกใหม่)
+  const [provisionOpen, setProvisionOpen] = useState(false);
+  const [provision, setProvision] = useState<ProvisionForm>(EMPTY_PROVISION);
+  const [provisioning, setProvisioning] = useState(false);
+  const [created, setCreated] = useState<CreatedCustomer | null>(null);
+
   useEffect(() => {
     if (!getToken()) {
       router.replace('/admin/login');
       return;
     }
     setReady(true);
+
+    // prefill จากปุ่ม "สร้างลูกค้า" บนตาราง lead (dashboard)
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('provision') === '1') {
+      setProvision({
+        email: params.get('email') ?? '',
+        phone: params.get('phone') ?? '',
+        firstNameTH: params.get('firstNameTH') ?? '',
+        lastNameTH: params.get('lastNameTH') ?? '',
+        planCode: params.get('planCode') ?? '',
+        note: '',
+        leadRef: params.get('leadRef') ?? '',
+      });
+      setProvisionOpen(true);
+      window.history.replaceState(null, '', '/admin/customers');
+    }
   }, [router]);
 
   const load = useCallback(
@@ -130,6 +173,36 @@ export default function AdminCustomersPage() {
     }
   };
 
+  const submitProvision = async () => {
+    if (!provision.email || !provision.phone) return;
+    setProvisioning(true);
+    setError(null);
+    try {
+      const res = await dormiApi.admin.createCustomer({
+        email: provision.email,
+        phone: provision.phone,
+        firstNameTH: provision.firstNameTH || undefined,
+        lastNameTH: provision.lastNameTH || undefined,
+        planCode: provision.planCode || undefined,
+        leadRef: provision.leadRef || undefined,
+        note: provision.note || undefined,
+      });
+      const data = (res as { data?: CreatedCustomer }).data ?? (res as CreatedCustomer);
+      setCreated(data);
+      void load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'สร้างลูกค้าไม่สำเร็จ');
+    } finally {
+      setProvisioning(false);
+    }
+  };
+
+  const closeProvision = () => {
+    setProvisionOpen(false);
+    setCreated(null);
+    setProvision(EMPTY_PROVISION);
+  };
+
   const toggleStatus = async (customer: AdminCustomer) => {
     const next = customer.status === 'active' ? 'suspended' : 'active';
     try {
@@ -147,7 +220,12 @@ export default function AdminCustomersPage() {
       <AdminNav />
       <main className="mx-auto max-w-6xl space-y-6 px-6 py-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <h1 className="font-display text-2xl font-bold text-ink">ลูกค้า</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="font-display text-2xl font-bold text-ink">ลูกค้า</h1>
+            <Button size="sm" onClick={() => setProvisionOpen(true)}>
+              + สร้างลูกค้า
+            </Button>
+          </div>
           <form onSubmit={submitSearch} className="flex items-center gap-2">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
@@ -272,6 +350,118 @@ export default function AdminCustomersPage() {
           </div>
         )}
       </main>
+
+      <Dialog open={provisionOpen} onOpenChange={(open) => !open && closeProvision()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {created ? 'สร้างลูกค้าสำเร็จ' : 'สร้างลูกค้าใหม่ (provision)'}
+            </DialogTitle>
+          </DialogHeader>
+          {created ? (
+            <div className="space-y-3">
+              <p className="text-sm text-ink-muted">
+                บัญชี <span className="font-medium text-ink">{created.email}</span> ถูกสร้างเป็น
+                OWNER{created.plan ? ` พร้อมแผน ${created.plan.planCode}` : ''} เรียบร้อย
+              </p>
+              {created.initialPassword && (
+                <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3">
+                  <div className="text-xs font-medium text-amber-800">
+                    รหัสผ่านชั่วคราว — แสดงครั้งเดียว ส่งให้ลูกค้าแล้วแนะนำให้เปลี่ยนทันที
+                  </div>
+                  <code className="mt-1 block select-all font-mono text-base text-amber-900">
+                    {created.initialPassword}
+                  </code>
+                </div>
+              )}
+              <DialogFooter>
+                <Button onClick={closeProvision}>ปิด</Button>
+              </DialogFooter>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>ชื่อ</Label>
+                    <Input
+                      value={provision.firstNameTH}
+                      onChange={(e) =>
+                        setProvision((p) => ({ ...p, firstNameTH: e.target.value }))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>นามสกุล</Label>
+                    <Input
+                      value={provision.lastNameTH}
+                      onChange={(e) =>
+                        setProvision((p) => ({ ...p, lastNameTH: e.target.value }))
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>อีเมล *</Label>
+                  <Input
+                    type="email"
+                    value={provision.email}
+                    onChange={(e) => setProvision((p) => ({ ...p, email: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>เบอร์โทร *</Label>
+                  <Input
+                    value={provision.phone}
+                    onChange={(e) => setProvision((p) => ({ ...p, phone: e.target.value }))}
+                    placeholder="0812345678"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>แผนตั้งต้น</Label>
+                  <Select
+                    value={provision.planCode}
+                    onValueChange={(v) => setProvision((p) => ({ ...p, planCode: v }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="ไม่ระบุ = แผน default (FREE)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {plans.map((p) => (
+                        <SelectItem key={p.planId} value={p.code}>
+                          {p.code} — {p.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>บันทึก</Label>
+                  <Input
+                    value={provision.note}
+                    onChange={(e) => setProvision((p) => ({ ...p, note: e.target.value }))}
+                    placeholder="เช่น จาก lead วันที่ 18 ก.ค."
+                  />
+                </div>
+                {provision.leadRef && (
+                  <p className="text-xs text-ink-muted">อ้างอิง lead: {provision.leadRef}</p>
+                )}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={closeProvision}>
+                  ยกเลิก
+                </Button>
+                <Button
+                  onClick={() => void submitProvision()}
+                  disabled={provisioning || !provision.email || !provision.phone}
+                >
+                  {provisioning ? 'กำลังสร้าง…' : 'สร้างลูกค้า'}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={target !== null} onOpenChange={(open) => !open && setTarget(null)}>
         <DialogContent>

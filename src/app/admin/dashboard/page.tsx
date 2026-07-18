@@ -1,9 +1,9 @@
 'use client';
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { AdminNav } from '@/components/admin/admin-nav';
 import { apiFetch, ApiError } from '@/lib/api';
 import { clearToken, getToken } from '@/lib/session';
 
@@ -29,6 +29,7 @@ interface Registration {
   email: string | null;
   phone: string;
   ipAddress: string | null;
+  interestedPlan: string | null;
   createdAt: string;
 }
 
@@ -109,11 +110,6 @@ export default function AdminDashboardPage() {
     void loadAll(token);
   }, [token, loadAll]);
 
-  function logout() {
-    clearToken();
-    router.replace('/admin/login');
-  }
-
   function onSearch(e: React.FormEvent) {
     e.preventDefault();
     if (!token) return;
@@ -134,34 +130,24 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="min-h-screen pb-16">
-      <header className="sticky top-0 z-30 border-b border-secondary/10 bg-white/85 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3 md:px-8">
-          <Link
-            href="/"
-            className="font-display text-lg font-bold tracking-tight text-secondary sm:text-xl"
-          >
-            dormi<span className="text-ink"> Admin</span>
-          </Link>
-          <div className="flex items-center gap-3">
-            <div className="hidden text-right text-xs sm:block">
-              <div className="font-medium text-ink">{profile?.name ?? profile?.email}</div>
-              <div className="text-ink-muted">{profile?.role}</div>
-            </div>
-            <button onClick={logout} className="btn-outline px-4 py-2 text-sm">
-              ออกจากระบบ
-            </button>
-          </div>
-        </div>
-      </header>
+      <AdminNav />
 
       <main className="mx-auto max-w-7xl space-y-6 px-5 py-6 md:px-8">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-ink md:text-3xl">
-            แดชบอร์ดผู้ดูแล
-          </h1>
-          <p className="text-sm text-ink-muted">
-            ภาพรวมการลงทะเบียน, section ที่ถูกดูมากที่สุด และปุ่มที่ถูกกดมากที่สุด
-          </p>
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <h1 className="font-display text-2xl font-bold text-ink md:text-3xl">
+              แดชบอร์ดผู้ดูแล
+            </h1>
+            <p className="text-sm text-ink-muted">
+              ภาพรวมการลงทะเบียน, section ที่ถูกดูมากที่สุด และปุ่มที่ถูกกดมากที่สุด
+            </p>
+          </div>
+          {profile && (
+            <div className="text-right text-xs">
+              <div className="font-medium text-ink">{profile.name ?? profile.email}</div>
+              <div className="text-ink-muted">{profile.role}</div>
+            </div>
+          )}
         </div>
 
         {error && (
@@ -247,8 +233,10 @@ export default function AdminDashboardPage() {
                   <th className="px-3 py-2 font-medium">ชื่อ-นามสกุล</th>
                   <th className="px-3 py-2 font-medium">เบอร์โทร</th>
                   <th className="px-3 py-2 font-medium">อีเมล</th>
+                  <th className="px-3 py-2 font-medium">แผนที่สนใจ</th>
                   <th className="px-3 py-2 font-medium">IP</th>
                   <th className="px-3 py-2 font-medium">วันเวลา</th>
+                  <th className="px-3 py-2 text-right font-medium">จัดการ</th>
                 </tr>
               </thead>
               <tbody>
@@ -262,22 +250,39 @@ export default function AdminDashboardPage() {
                     </td>
                     <td className="px-3 py-3 text-ink-muted">{r.phone}</td>
                     <td className="px-3 py-3 text-ink-muted">{r.email ?? '—'}</td>
+                    <td className="px-3 py-3">
+                      {r.interestedPlan ? (
+                        <span className="rounded-full bg-secondary/10 px-2 py-0.5 text-xs font-medium text-secondary">
+                          {r.interestedPlan}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-ink-muted">—</span>
+                      )}
+                    </td>
                     <td className="px-3 py-3 text-xs text-ink-muted">{r.ipAddress ?? '—'}</td>
                     <td className="px-3 py-3 text-xs text-ink-muted">
                       {new Date(r.createdAt).toLocaleString('th-TH')}
+                    </td>
+                    <td className="px-3 py-3 text-right">
+                      <a
+                        href={`/admin/customers?provision=1&firstNameTH=${encodeURIComponent(r.firstName)}&lastNameTH=${encodeURIComponent(r.lastName)}&email=${encodeURIComponent(r.email ?? '')}&phone=${encodeURIComponent(r.phone)}&planCode=${encodeURIComponent(r.interestedPlan ?? '')}&leadRef=${encodeURIComponent(r.id)}`}
+                        className="rounded-lg border border-secondary/30 px-3 py-1.5 text-xs font-medium text-secondary transition-colors hover:bg-secondary/10"
+                      >
+                        สร้างลูกค้า
+                      </a>
                     </td>
                   </tr>
                 ))}
                 {!loading && regs && regs.items.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-3 py-10 text-center text-ink-muted">
+                    <td colSpan={6} className="px-3 py-10 text-center text-ink-muted">
                       ยังไม่มีผู้ลงทะเบียน
                     </td>
                   </tr>
                 )}
                 {loading && (
                   <tr>
-                    <td colSpan={5} className="px-3 py-10 text-center text-ink-muted">
+                    <td colSpan={6} className="px-3 py-10 text-center text-ink-muted">
                       กำลังโหลด…
                     </td>
                   </tr>

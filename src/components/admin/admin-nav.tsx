@@ -11,6 +11,8 @@ const LINKS = [
   { href: '/admin/dashboard', label: 'ภาพรวม & Lead' },
   { href: '/admin/customers', label: 'ลูกค้า' },
   { href: '/admin/plans', label: 'แผน & ราคา' },
+  { href: '/admin/roles', label: 'Role & สิทธิ์' },
+  { href: '/admin/audit', label: 'Audit' },
 ];
 
 /** แถบนำทางแผงควบคุมทีมงาน — dashboard/lead อยู่ dormi-admin · ลูกค้า/แผนอยู่ dormi-backend-2 (SSO token เดียวกัน) */
