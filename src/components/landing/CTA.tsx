@@ -19,8 +19,9 @@ export function CTA({ onRegisterClick }: Props) {
       <div className="mx-auto max-w-3xl">
         <h2 className="font-display text-3xl font-bold text-ink md:text-4xl lg:text-5xl">
           พร้อมหรือยัง?
-          <br />
-          <h4 className="text-lg lg:text-3xl">ที่จะเปลี่ยนงานบริหารที่วุ่นวาย ให้เป็นเรื่องง่าย</h4>
+          <span className="mt-2 block text-lg lg:text-3xl">
+            ที่จะเปลี่ยนงานบริหารที่วุ่นวาย ให้เป็นเรื่องง่าย
+          </span>
         </h2>
         <p className="mt-4 text-base text-ink-muted">
           ก้าวสู่การบริหารที่ง่ายขึ้น ร่วมกับเจ้าของหอพักชั้นนำที่เลือกใช้ Dormi
